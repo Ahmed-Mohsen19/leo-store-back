@@ -60,16 +60,16 @@
         </button>
         <div id="firestore-test"></div>
         <p style="margin-top: 15px;">
-            <strong>Quick Fix:</strong> If test fails, go to <a href="firestore-fix.html" target="_blank" style="color: #007bff;"><strong>firestore-fix.html</strong></a> for step-by-step instructions.
+            <strong>Quick Fix:</strong> If test fails, go to <a href="./firestore-fix.html" target="_blank" style="color: #007bff;"><strong>firestore-fix.html</strong></a> for step-by-step instructions.
         </p>
     </div>
 
     <!-- Firebase SDK -->
-    <script type="module" src="js/firebase.js"></script>
-    <script type="module" src="js/sessionService.js"></script>
-    <script type="module" src="js/auth.js"></script>
-    <script type="module" src="js/cartService.js"></script>
-    <script type="module" src="js/authState.js"></script>
+    <script type="module" src="./js/firebase.js"></script>
+    <script type="module" src="./js/sessionService.js"></script>
+    <script type="module" src="./js/auth.js"></script>
+    <script type="module" src="./js/cartService.js"></script>
+    <script type="module" src="./js/authState.js"></script>
 
     <script type="module">
         // Wait for services
@@ -306,7 +306,7 @@
 
                 if (!firebaseUser && !sessionUser) {
                     html += '<p class="error">❌ <strong>No authenticated user found.</strong> Please login first.</p>';
-                    html += '<p><a href="Login.html">Go to Login Page</a></p>';
+                    html += '<p><a href="./Login.html">Go to Login Page</a></p>';
                     statusDiv.innerHTML = html;
                     return;
                 }
@@ -370,7 +370,7 @@
                         html += '<p><strong>What this means:</strong> Your Firestore security rules don\'t allow authenticated users to create orders.</p>';
                         html += '<p><strong>How to fix:</strong></p>';
                         html += '<ol>';
-                        html += '<li>Go to <a href="firestore-fix.html" target="_blank"><strong>firestore-fix.html</strong></a></li>';
+                        html += '<li>Go to <a href="./firestore-fix.html" target="_blank"><strong>firestore-fix.html</strong></a></li>';
                         html += '<li>Follow the step-by-step instructions</li>';
                         html += '<li>Copy the rules and paste into Firebase Console</li>';
                         html += '<li>Click Publish</li>';
