@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - Leo Store</title>
+    <link rel="stylesheet" href="Css/Contact.css">
+</head>
+<body>
+    <div class="nav" style="background-color: #fff; padding: 15px 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;">
+        <a href="home.html" style="text-decoration: none; color: #171427; font-size: 1.5rem; font-weight: bold;">
+            <span style="color: #fd4646;">Leo</span>Store
+        </a>
+        <a href="Leo.html" style="text-decoration: none; color: #171427; margin: 0 10px;">Shirts</a>
+        <a href="shoes.html" style="text-decoration: none; color: #171427; margin: 0 10px;">Shoes</a>
+        <a href="accessories.html" style="text-decoration: none; color: #171427; margin: 0 10px;">Accessories</a>
+        <a href="contact.html" style="text-decoration: none; color: #171427; margin: 0 10px;">Contact</a>
+    </div>
+    
+    <div class="container">
+        <h1>Contact Us</h1>
+        <div id="error-message" style="color: red; margin-bottom: 10px; display: none;"></div>
+        <div id="success-message" style="color: green; margin-bottom: 10px; display: none;"></div>
+        <form id="contact-form">
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" required>
+
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="4" required></textarea>
+
+            <input type="submit" value="Submit" id="submit-btn">
+        </form>
+    </div>
+    <h2>Connect with us</h2>
+    <div class="social-icons" id="social-icons">
+        <nav>
+            <a href="https://www.facebook.com/share/i3o8YQ32UxJWeuFy/?mibextid=qi2Omg" target="_blank"><img src="photo/facebook (1).png" alt="Facebook" width="70" height="70"></a>
+            <a href="https://twitter.com/AhmedMohsen30?t=FXOqiPDV17Xj1CT7Bj8aCw&s=08" target="_blank"><img src="photo/twitter.png" alt="Twitter" width="70" height="70"></a>
+            <a href="https://www.instagram.com/ahmed.mohsen_10?igsh=aHduZXJ0cWtxM2kx" target="_blank"><img src="photo/instagram.png" alt="Instagram" width="70" height="70"></a>
+        </nav>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module" src="js/firebase.js"></script>
+    <script type="module" src="js/sessionService.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/authState.js"></script>
+    
+    <script type="module">
+        // Wait for Firebase
+        function waitForFirebase() {
+            return new Promise((resolve) => {
+                const checkFirebase = setInterval(() => {
+                    if (window.firebaseDb) {
+                        clearInterval(checkFirebase);
+                        resolve();
+                    }
+                }, 100);
+            });
+        }
+
+        async function initContact() {
+            await waitForFirebase();
+            
+            const form = document.getElementById('contact-form');
+            const submitBtn = document.getElementById('submit-btn');
+            const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+            
+            // Pre-fill email if user is logged in (check session first)
+            let user = null;
+            if (window.sessionService) {
+                const sessionValidation = window.sessionService.validateCurrentSession();
+                if (sessionValidation.valid) {
+                    user = window.authService ? window.authService.getCurrentUser() : null;
+                    if (!user) {
+                        const sessionUser = window.sessionService.getSessionUser();
+                        if (sessionUser) {
+                            user = { email: sessionUser.email, uid: sessionUser.uid };
+                        }
+                    }
+                }
+            } else {
+                user = window.authService ? window.authService.getCurrentUser() : null;
+            }
+            
+            if (user && user.email) {
+                document.getElementById('email').value = user.email;
+            }
+            
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const name = document.getElementById('name').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const message = document.getElementById('message').value.trim();
+                
+                // Clear messages
+                errorMessage.style.display = 'none';
+                successMessage.style.display = 'none';
+                
+                if (!name || !email || !message) {
+                    errorMessage.textContent = 'Please fill in all fields.';
+                    errorMessage.style.display = 'block';
+                    return;
+                }
+                
+                // Disable button
+                submitBtn.disabled = true;
+                submitBtn.value = 'Sending...';
+                
+                try {
+                    // Save contact message to Firestore
+                    const db = window.firebaseDb;
+                    const { collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                    
+                    await addDoc(collection(db, "contacts"), {
+                        name: name,
+                        email: email,
+                        message: message,
+                        userId: user ? user.uid : null,
+                        createdAt: serverTimestamp()
+                    });
+                    
+                    successMessage.textContent = 'Thank you for your message! We will get back to you soon.';
+                    successMessage.style.display = 'block';
+                    form.reset();
+                    
+                } catch (error) {
+                    errorMessage.textContent = 'Error sending message: ' + error.message;
+                    errorMessage.style.display = 'block';
+                }
+                
+                submitBtn.disabled = false;
+                submitBtn.value = 'Submit';
+            });
+        }
+
+        initContact();
+    </script>
+</body>
+</html>

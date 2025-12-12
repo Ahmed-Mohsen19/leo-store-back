@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leo Store</title>
+    <!-- box icons  -->
+    <link href='https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css' rel='stylesheet'>
+    <!-- styles  -->
+    <link rel="stylesheet" href="Leo.css">
+</head>
+
+<body>
+    <!-- HEADER  -->
+    <header>
+        <!-- NAV  -->
+        <div class="nav container"> 
+            <a href="home.html" class="logo"><span>Leo</span>Store</a>
+            <nav>
+                <a href="Leo.html">Shirts</a>
+                <a href="shoes.html">Shoes</a>
+                <a href="accessories.html">Accessories</a>
+                <a href="contact.html">Contact</a>
+                <button><a href="Login.html">Login</a></button>
+                <button><a href="Signup.html">Sign Up</a></button>
+            </nav>
+            <!-- Search Bar -->
+            <div class="search-container">
+                <input type="text" id="search-input" placeholder="Search...">
+                <button id="search-button"><i class='bx bx-search'></i></button>
+            </div>
+            <!-- CART ICON  -->
+            <i class='bx bx-shopping-bag' id="cart-icon"></i>
+            <!-- CART  -->
+            <div class="cart">
+                <h2 class="cart-title">Your Cart</h2>
+                <!-- CONTENT  -->
+                <div class="cart-content"></div>
+                <!-- TOTAL   -->
+                <div class="total">
+                    <div class="total-title">Total</div>
+                    <div class="total-price">$0</div>
+                </div>
+                <!-- BUY BUTTON  -->
+                <button type="button" class="btn-buy">Buy Now</button>
+                <!-- CART CLOSE  -->
+                <i class='bx bx-x' id="cart-close"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- SHOP SECTION  -->
+    <section class="shop container">
+        <h2 class="section-title">Shoes Products</h2>
+        <!-- CONTENT  -->
+        <div class="shop-content">
+            <!-- BOX 1 -->
+            <div class="product-box">
+                <img src="photo/black.jpg" alt="" class="product-img">
+                <h2 class="product-title">black Shoes</h2>
+                <span class="product-price">$250.00</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 2 -->
+            <div class="product-box">
+                <img src="photo/1.jpg" class="product-img">
+                <h2 class="product-title">Nike Red Shoes</h2>
+                <span class="product-price">$280.00</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 3 -->
+            <div class="product-box">
+                <img src="photo/blue-shoes.jpg" alt="" class="product-img">
+                <h2 class="product-title">Adidas Blue and pink Shoes</h2>
+                <span class="product-price">$350.00</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 4 -->
+            <div class="product-box">
+                <img src="photo/GW1024_01_standard_hover.avif" alt="" class="product-img">
+                <h2 class="product-title">Adidas Orange Shoes </h2>
+                <span class="product-price">$500.00</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 5 -->
+            <div class="product-box">
+                <img src="photo/GZ0031_HM1.avif" alt="" class="product-img">
+                <h2 class="product-title">Adidas Blue Shoes</h2>
+                <span class="product-price">$680.00</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 6 -->
+            <div class="product-box">
+                <img src="photo/OIF.jpg" alt="" class="product-img">
+                <h2 class="product-title">Nike Crystal Shoes</h2>
+                <span class="product-price">$140.00</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 7 -->
+            <div class="product-box">
+                <img src="photo/OIP.jpeg" alt="" class="product-img">
+                <h2 class="product-title">Adidas Yellow And Blue Shoes</h2>
+                <span class="product-price">$170.00</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 8 -->
+            <div class="product-box">
+                <img src="photo/th.jpg" alt="" class="product-img">
+                <h2 class="product-title">Light green Adidas shoes</h2>
+                <span class="product-price">$700.00</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 9 -->
+            <div class="product-box">
+                <img src="photo/vapor-edge-pro-360-2-mens-football-cleats-8qXpjr.png" alt="" class="product-img">
+                <h2 class="product-title">Nike orange shoes</h2>
+                <span class="product-price">$250.00</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 10 -->
+            <div class="product-box">
+                <img src="photo/shoes.png" alt="" class="product-img">
+                <h2 class="product-title">Nike Sports shoes</h2>
+                <span class="product-price">$700.00</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 11 -->
+            <div class="product-box">
+                <img src="photo/vapor-edge-speed-360-2-mens-football-cleats-6zNTX9.png" alt="" class="product-img">
+                <h2 class="product-title">Nike White Shoes</h2>
+                <span class="product-price">$700.00</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 12 -->
+            <div class="product-box">
+                <img src="photo/shoes_gold.jpg" alt="" class="product-img">
+                <h2 class="product-title">Gold and White Shoes</h2>
+                <span class="product-price">$700.00</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+        </div>
+    </section>
+
+    <!-- Firebase SDK -->
+    <script type="module" src="js/firebase.js"></script>
+    <script type="module" src="js/sessionService.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/cartService.js"></script>
+    <script type="module" src="js/authState.js"></script>
+    <!-- link js  -->
+    <script src="js/Leo.js"></script>
+
+    <hr>
+    <h2>Connect with us</h2>
+    <div class="social-icons" id="social-icons">
+        <nav>
+            <a href="https://www.facebook.com/share/i3o8YQ32UxJWeuFy/?mibextid=qi2Omg" target="_blank"><img src="photo/facebook (1).png" alt="Facebook" width="70" height="70"></a>
+            <a href="https://twitter.com/AhmedMohsen30?t=FXOqiPDV17Xj1CT7Bj8aCw&s=08" target="_blank"><img src="photo/twitter.png" alt="Twitter" width="70" height="70"></a>
+            <a href="https://www.instagram.com/ahmed.mohsen_10?igsh=aHduZXJ0cWtxM2kx" target="_blank"><img src="photo/instagram.png" alt="Instagram" width="70" height="70"></a>
+            <a href="contact.html" target="_blank"><img src="photo/email.png" alt="email" width="70" height="70"></a>
+        </nav>
+    </div>
+</body>
+</html>

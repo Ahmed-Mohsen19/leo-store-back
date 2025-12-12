@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leo Store - Shirts</title>
+    <!-- box icons  -->
+    <link href='https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css' rel='stylesheet'>
+    <!-- styles  -->
+    <link rel="stylesheet" href="Leo.css">
+</head>
+<body>
+
+    <!-- HEADER  -->
+    <header>
+        <!-- NAV  -->
+        <div class="nav container">
+            <a href="home.html" class="logo"><span>Leo</span>Store</a>
+            <nav>
+                <a href="Leo.html">Shirts</a>
+                <a href="shoes.html">Shoes</a>
+                <a href="accessories.html">Accessories</a>
+                <a href="contact.html">Contact</a>
+                <button><a href="Login.html">Login</a></button>
+                <button><a href="Signup.html">Sign Up</a></button>
+            </nav>
+            <!-- CART ICON  -->
+            <i class='bx bx-shopping-bag' id="cart-icon"></i>
+
+            <!-- Search Bar -->
+            <div class="search-container">
+                <input type="text" id="search-input" placeholder="Search...">
+                <button id="search-button">Search</button>
+            </div>
+
+            <!-- CART  -->
+            <div class="cart">
+                <h2 class="cart-title">Your Cart</h2>
+
+                <!-- CONTENT  -->
+                <div class="cart-content"></div>
+
+                <!-- TOTAL   -->
+                <div class="total">
+                    <div class="total-title">Total</div>
+                    <div class="total-price">$0</div>
+                </div>
+                <!-- BUY BUTTON  -->
+                <button type="button" class="btn-buy">Buy Now</button>
+                <!-- CART CLOSE  -->
+                <i class='bx bx-x' id="cart-close"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- SHOP SECTION  -->
+    <section class="shop container">
+        <h2 class="section-title">Shirt Products</h2>
+
+        <!-- CONTENT  -->
+        <div class="shop-content">
+            <!-- BOX 1 -->
+            <div class="product-box" data-product-name="Arsenal Shirt">
+                <img src="photo/arsenal-adidas-home-shirt-2024-25-.jpg" alt="" class="product-img">
+                <h2 class="product-title">Arsenal Shirt</h2>
+                <span class="product-price">$79.5</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 2 -->
+            <div class="product-box" data-product-name="Milan Shirt">
+                <img src="photo/black-mens_.avif" alt="" class="product-img">
+                <h2 class="product-title">Milan shirt</h2>
+                <span class="product-price">$80</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 3 -->
+            <div class="product-box" data-product-name="Bayern Shirt">
+                <img src="photo/fc-bayern.avif" alt="" class="product-img">
+                <h2 class="product-title">bayern shirt</h2>
+                <span class="product-price">$70</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 4 -->
+            <div class="product-box" data-product-name="Italy Shirt 2024">
+                <img src="photo/italy-adidas-away-shirt-2024.avif" alt="" class="product-img">
+                <h2 class="product-title">Italy Shirt 2024</h2>
+                <span class="product-price">$105</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 5 -->
+            <div class="product-box" data-product-name="Real Madrid Adidas">
+                <img src="photo/real-madrid-adidas-away-shirt-2023-24.avif" alt="" class="product-img">
+                <h2 class="product-title">Real Madrid Adidas</h2>
+                <span class="product-price">$95</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 6 -->
+            <div class="product-box" data-product-name="Manchester City">
+                <img src="photo/manchester-city-puma-home-shirt-2024-25.avif" alt="" class="product-img">
+                <h2 class="product-title">manchester city</h2>
+                <span class="product-price">$140</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 7 -->
+            <div class="product-box" data-product-name="Barcelona Shirt">
+                <img src="photo/photo_2023-05-21_13-18-24.jpg" alt="" class="product-img">
+                <h2 class="product-title">Barcelona Shirt</h2>
+                <span class="product-price">$170</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 8 -->
+            <div class="product-box" data-product-name="Argentina Shirt">
+                <img src="photo/photo_2023-05-21_14-11-12.jpg" alt="" class="product-img">
+                <h2 class="product-title">Argentina Shirt</h2>
+                <span class="product-price">$95</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 9 -->
+            <div class="product-box" data-product-name="Manchester United">
+                <img src="photo/manchester-united-.jpg" alt="" class="product-img">
+                <h2 class="product-title">Manchester united</h2>
+                <span class="product-price">$110</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 10 -->
+            <div class="product-box" data-product-name="Alnasr Shirt">
+                <img src="photo/IMG_20231115_195247_884.jpg" alt="" class="product-img">
+                <h2 class="product-title">Alnasr shirt</h2>
+                <span class="product-price">$70</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 11 -->
+            <div class="product-box" data-product-name="German Shirt">
+                <img src="photo/dfb-adidas-home-avif.avif" alt="" class="product-img">
+                <h2 class="product-title">German Shirt</h2>
+                <span class="product-price">$150</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+            <!-- BOX 12 -->
+            <div class="product-box" data-product-name="Arsenal 2006 Shirt">
+                <img src="photo/photo_2023-08-01_14-40-16.jpg" alt="" class="product-img">
+                <h2 class="product-title">Arsenal 2006 Shirt</h2>
+                <span class="product-price">$200</span>
+                <i class='bx bx-shopping-bag add-cart'></i>
+            </div>
+        </div>
+    </section>
+
+    <!-- Firebase SDK -->
+    <script type="module" src="js/firebase.js"></script>
+    <script type="module" src="js/sessionService.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/cartService.js"></script>
+    <script type="module" src="js/authState.js"></script>
+    <script src="js/Leo.js"></script>
+
+    <hr>
+    <h2>Connect with us</h2>
+    <div class="social-icons" id="social-icons">
+        <nav>
+            <a href="https://www.facebook.com/share/i3o8YQ32UxJWeuFy/?mibextid=qi2Omg" target="_blank"><img src="photo/facebook (1).png" alt="Facebook" width="70" height="70"></a>
+            <a href="https://twitter.com/AhmedMohsen30?t=FXOqiPDV17Xj1CT7Bj8aCw&s=08" target="_blank"><img src="photo/twitter.png" alt="Twitter" width="70" height="70"></a>
+            <a href="https://www.instagram.com/ahmed.mohsen_10?igsh=aHduZXJ0cWtxM2kx" target="_blank"><img src="photo/instagram.png" alt="Instagram" width="70" height="70"></a>
+            <a href="contact.html" target="_blank"><img src="photo/email.png" alt="email" width="70" height="70"></a>
+        </nav>
+    </div>
+
+
+</body>
+
+</html>

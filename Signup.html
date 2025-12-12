@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account</title>
+    <link rel="stylesheet" href="Css/Signup.css">
+</head>
+<body>
+    <section>
+        <div class="color"></div>
+        <div class="color"></div>
+        <div class="color"></div>
+        <div class="container">
+            <div class="form">
+                <h2>Create Account</h2>
+                <div id="error-message" style="color: red; margin-bottom: 10px; display: none;"></div>
+                <div id="success-message" style="color: green; margin-bottom: 10px; display: none;"></div>
+                <form id="signup-form">
+                    <div class="inputBox">
+                        <input type="text" id="fname" name="fname" placeholder="First Name" required>
+                    </div>
+                    <div class="inputBox">
+                        <input type="text" id="lname" name="lname" placeholder="Last Name" required>
+                    </div>
+                    <div class="inputBox">
+                        <input type="email" id="email" name="email" placeholder="Email" required>
+                    </div>
+                    <div class="inputBox">
+                        <input type="password" id="password" name="password" placeholder="Password (min 6 characters)" required minlength="6">
+                    </div>
+                    <div class="inputBox">
+                        <input type="submit" value="Submit" id="signup-btn">
+                    </div>
+                </form>
+                <p class="forget">Already have an account? <a href="Login.html">Login</a></p>
+                <p style="margin-top: 15px; text-align: center;"><a href="home.html" style="color: #4946fd;">← Back to Home</a></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Firebase SDK -->
+    <script type="module" src="js/firebase.js"></script>
+    <script type="module" src="js/sessionService.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    
+    <script type="module">
+        // Wait for auth service to be available
+        function waitForAuthService() {
+            return new Promise((resolve) => {
+                const checkAuth = setInterval(() => {
+                    if (window.authService) {
+                        clearInterval(checkAuth);
+                        resolve();
+                    }
+                }, 100);
+            });
+        }
+
+        async function initSignup() {
+            await waitForAuthService();
+            
+            const signupForm = document.getElementById("signup-form");
+            const signupBtn = document.getElementById("signup-btn");
+            const errorMessage = document.getElementById("error-message");
+            const successMessage = document.getElementById("success-message");
+
+            signupForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                
+                const firstName = document.getElementById("fname").value.trim();
+                const lastName = document.getElementById("lname").value.trim();
+                const email = document.getElementById("email").value.trim();
+                const password = document.getElementById("password").value;
+
+                // Clear previous messages
+                errorMessage.style.display = "none";
+                successMessage.style.display = "none";
+
+                // Validation
+                if (!firstName || !lastName || !email || !password) {
+                    errorMessage.textContent = "Please fill in all fields.";
+                    errorMessage.style.display = "block";
+                    return;
+                }
+
+                if (password.length < 6) {
+                    errorMessage.textContent = "Password must be at least 6 characters long.";
+                    errorMessage.style.display = "block";
+                    return;
+                }
+
+                // Disable button during signup
+                signupBtn.disabled = true;
+                signupBtn.value = "Creating account...";
+
+                try {
+                    const result = await window.authService.signUp(email, password, firstName, lastName);
+
+                    if (result.success) {
+                        successMessage.textContent = "Account created successfully! Redirecting...";
+                        successMessage.style.display = "block";
+                        // Redirect to home page
+                        setTimeout(() => {
+                            window.location.href = "home.html";
+                        }, 1500);
+                    } else {
+                        errorMessage.textContent = result.error || "An error occurred. Please try again.";
+                        errorMessage.style.display = "block";
+                        signupBtn.disabled = false;
+                        signupBtn.value = "Submit";
+                    }
+                } catch (error) {
+                    console.error("Signup error:", error);
+                    errorMessage.textContent = "An unexpected error occurred. Please try again.";
+                    errorMessage.style.display = "block";
+                    signupBtn.disabled = false;
+                    signupBtn.value = "Submit";
+                }
+            });
+        }
+
+        initSignup();
+    </script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forget Password</title>
+    <link rel="stylesheet" href="Css/pass.css">
+</head>
+<body>
+    <section>
+        <div class="color"></div>
+        <div class="color"></div>
+        <div class="color"></div>
+        <div class="container">
+            <div class="form">
+                <h2>Forget Password</h2>
+                <div id="error-message" style="color: red; margin-bottom: 10px; display: none;"></div>
+                <div id="success-message" style="color: green; margin-bottom: 10px; display: none;"></div>
+                <form id="reset-form">
+                    <div class="inputBox">
+                        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                    </div>
+                    <div class="inputBox">
+                        <input type="submit" value="Submit" id="reset-btn">
+                    </div>
+                    <p class="forget">Remember your password? <a href="Login.html">Login here</a></p>
+                    <p style="margin-top: 15px; text-align: center;"><a href="home.html" style="color: #4946fd;">← Back to Home</a></p>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Firebase SDK -->
+    <script type="module" src="js/firebase.js"></script>
+    <script type="module" src="js/sessionService.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    
+    <script type="module">
+        // Wait for auth service to be available
+        function waitForAuthService() {
+            return new Promise((resolve) => {
+                const checkAuth = setInterval(() => {
+                    if (window.authService) {
+                        clearInterval(checkAuth);
+                        resolve();
+                    }
+                }, 100);
+            });
+        }
+
+        async function initPasswordReset() {
+            await waitForAuthService();
+            
+            const resetForm = document.getElementById("reset-form");
+            const resetBtn = document.getElementById("reset-btn");
+            const errorMessage = document.getElementById("error-message");
+            const successMessage = document.getElementById("success-message");
+
+            resetForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById("email").value.trim();
+
+                // Clear previous messages
+                errorMessage.style.display = "none";
+                successMessage.style.display = "none";
+
+                if (!email) {
+                    errorMessage.textContent = "Please enter your email address.";
+                    errorMessage.style.display = "block";
+                    return;
+                }
+
+                // Disable button during reset
+                resetBtn.disabled = true;
+                resetBtn.value = "Sending...";
+
+                const result = await window.authService.resetPassword(email);
+
+                if (result.success) {
+                    successMessage.textContent = "Password reset email sent! Please check your inbox.";
+                    successMessage.style.display = "block";
+                    resetForm.reset();
+                } else {
+                    errorMessage.textContent = result.error;
+                    errorMessage.style.display = "block";
+                }
+                
+                resetBtn.disabled = false;
+                resetBtn.value = "Submit";
+            });
+        }
+
+        initPasswordReset();
+    </script>
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Page - Leo Store</title>
+    <style>
+        body {
+            font-family: 'Poppins', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .nav {
+            background-color: #fff;
+            padding: 15px 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .nav a {
+            text-decoration: none;
+            color: #171427;
+            margin: 0 10px;
+        }
+        .nav .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .nav .logo span {
+            color: #fd4646;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            margin-top: 0;
+            color: #171427;
+        }
+        .order-summary {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #171427;
+        }
+        input[type="text"],
+        input[type="email"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        input[type="submit"] {
+            width: 100%;
+            padding: 12px;
+            background-color: #fd4646;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+        input[type="submit"]:hover {
+            background-color: #e63939;
+        }
+        input[type="submit"]:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .error-message {
+            color: red;
+            margin-bottom: 10px;
+            display: none;
+        }
+        .success-message {
+            color: green;
+            margin-bottom: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="home.html" class="logo"><span>Leo</span>Store</a>
+        <a href="Leo.html">Shirts</a>
+        <a href="shoes.html">Shoes</a>
+        <a href="accessories.html">Accessories</a>
+        <a href="contact.html">Contact</a>
+    </div>
+    
+    <div class="container">
+        <h2>Payment Details</h2>
+        <div id="error-message" class="error-message"></div>
+        <div id="success-message" class="success-message"></div>
+        
+        <div class="order-summary" id="order-summary">
+            <h3>Order Summary</h3>
+            <p id="order-items">Loading order details...</p>
+            <p><strong>Total: <span id="order-total">$0.00</span></strong></p>
+        </div>
+        
+        <form id="payment-form">
+            <label for="name">Full Name:</label>
+            <input type="text" id="name" name="name" required>
+            
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+            
+            <label for="address">Shipping Address:</label>
+            <textarea id="address" name="address" rows="3" required></textarea>
+            
+            <label for="card_number">Card Number:</label>
+            <input type="text" id="card_number" name="card_number" placeholder="1234 5678 9012 3456" maxlength="19" required>
+            
+            <label for="expiry">Expiration Date:</label>
+            <input type="text" id="expiry" name="expiry" placeholder="MM/YY" maxlength="5" required>
+            
+            <label for="cvv">CVV:</label>
+            <input type="text" id="cvv" name="cvv" placeholder="123" maxlength="4" required>
+            
+            <input type="submit" value="Complete Payment" id="submit-btn">
+        </form>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module" src="js/firebase.js"></script>
+    <script type="module" src="js/sessionService.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/cartService.js"></script>
+    <script type="module" src="js/authState.js"></script>
+    
+    <script type="module">
+        // Wait for services
+        function waitForServices() {
+            return new Promise((resolve) => {
+                const checkServices = setInterval(() => {
+                    if (window.firebaseDb && window.authService && window.cartService) {
+                        clearInterval(checkServices);
+                        resolve();
+                    }
+                }, 100);
+            });
+        }
+
+        async function initPayment() {
+            await waitForServices();
+            
+            // Check if user is logged in (check session first)
+            let user = null;
+            if (window.sessionService) {
+                const sessionValidation = window.sessionService.validateCurrentSession();
+                if (sessionValidation.valid) {
+                    user = window.authService.getCurrentUser();
+                    if (!user) {
+                        // Get from session
+                        const sessionUser = window.sessionService.getSessionUser();
+                        if (sessionUser) {
+                            user = { uid: sessionUser.uid, email: sessionUser.email, displayName: sessionUser.displayName };
+                        }
+                    }
+                }
+            } else {
+                user = window.authService.getCurrentUser();
+            }
+            
+            if (!user) {
+                alert("Please login to complete payment.");
+                window.location.href = "Login.html";
+                return;
+            }
+            
+            // Load order data from localStorage
+            let orderData = null;
+            try {
+                const pendingOrder = localStorage.getItem('pendingOrder');
+                if (pendingOrder) {
+                    orderData = JSON.parse(pendingOrder);
+                }
+            } catch (error) {
+                console.error("Error loading order data:", error);
+            }
+            
+            // If no order data, check if order was already completed or redirect back
+            if (!orderData) {
+                // Check if user came back after payment (cart was cleared)
+                if (sessionStorage.getItem('clearCart') === 'true') {
+                    alert("Your order has already been processed. Thank you!");
+                    sessionStorage.removeItem('clearCart');
+                    window.location.href = "home.html";
+                } else {
+                    alert("No order found. Please add items to cart first.");
+                    window.location.href = "home.html";
+                }
+                return;
+            }
+            
+            // Verify order belongs to current user
+            if (orderData.userId !== user.uid) {
+                alert("This order does not belong to you. Please create a new order.");
+                localStorage.removeItem('pendingOrder');
+                sessionStorage.removeItem('orderInProgress');
+                window.location.href = "home.html";
+                return;
+            }
+            
+            // Display order summary
+            displayOrderSummary(orderData);
+            
+            // Set user email and name
+            document.getElementById('email').value = orderData.userEmail || user.email || '';
+            document.getElementById('name').value = orderData.userName || user.displayName || '';
+            
+            // Format card number input
+            document.getElementById('card_number').addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\s/g, '');
+                let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+                e.target.value = formattedValue;
+            });
+            
+            // Format expiry input
+            document.getElementById('expiry').addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length >= 2) {
+                    value = value.substring(0, 2) + '/' + value.substring(2, 4);
+                }
+                e.target.value = value;
+            });
+            
+            // Handle form submission
+            document.getElementById('payment-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await handlePayment(orderData, user);
+            });
+        }
+
+        function displayOrderSummary(orderData) {
+            const itemsHtml = orderData.items.map(item => {
+                const quantity = item.quantity || 1;
+                const itemTotal = parseFloat(item.price.replace("$", "").replace(",", "")) * quantity;
+                return `<li>${item.title} - ${item.price} x ${quantity} = $${itemTotal.toFixed(2)}</li>`;
+            }).join('');
+            document.getElementById('order-items').innerHTML = `<ul>${itemsHtml}</ul>`;
+            document.getElementById('order-total').textContent = '$' + orderData.total;
+        }
+
+        // Helper function to mask card number (for security)
+        function maskCardNumber(cardNumber) {
+            const cleaned = cardNumber.replace(/\s/g, '');
+            if (cleaned.length >= 4) {
+                return '**** **** **** ' + cleaned.slice(-4);
+            }
+            return '****';
+        }
+
+        async function handlePayment(orderData, user) {
+            const submitBtn = document.getElementById('submit-btn');
+            const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+            
+            // Clear messages
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+            
+            // Get form values
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const address = document.getElementById('address').value.trim();
+            const cardNumber = document.getElementById('card_number').value.trim();
+            const expiry = document.getElementById('expiry').value.trim();
+            const cvv = document.getElementById('cvv').value.trim();
+            
+            // Validation
+            if (!name || !email || !address || !cardNumber || !expiry || !cvv) {
+                errorMessage.textContent = "Please fill in all fields.";
+                errorMessage.style.display = 'block';
+                return;
+            }
+            
+            // Disable button
+            submitBtn.disabled = true;
+            submitBtn.value = 'Processing...';
+            
+            try {
+                const db = window.firebaseDb;
+                const { collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                
+                // Get user ID from session or Firebase user
+                const userId = user.uid || (window.sessionService ? window.sessionService.getSessionUser()?.uid : null);
+                if (!userId) {
+                    throw new Error("User ID not found. Please login again.");
+                }
+                
+                // Prepare complete order with payment details
+                const completeOrder = {
+                    userId: userId,
+                    items: orderData.items,
+                    total: orderData.total,
+                    status: "completed",
+                    
+                    // Payment details
+                    payment: {
+                        method: "card",
+                        cardNumber: maskCardNumber(cardNumber), // Store masked card number
+                        cardLast4: cardNumber.replace(/\s/g, '').slice(-4), // Last 4 digits
+                        expiry: expiry,
+                        // Note: CVV should NEVER be stored - we don't store it for security
+                    },
+                    
+                    // Shipping details
+                    shipping: {
+                        name: name,
+                        email: email,
+                        address: address
+                    },
+                    
+                    // Timestamps
+                    createdAt: serverTimestamp(),
+                    paidAt: serverTimestamp()
+                };
+                
+                // Save complete order to Firestore
+                const docRef = await addDoc(collection(db, "orders"), completeOrder);
+                
+                // Clear cart from localStorage
+                localStorage.removeItem('pendingOrder');
+                
+                // Clear order in progress flag and set clear cart flag
+                sessionStorage.removeItem('orderInProgress');
+                sessionStorage.setItem('clearCart', 'true');
+                
+                // Clear cart in Firestore if cartService is available
+                if (window.cartService) {
+                    try {
+                        await window.cartService.saveCartToFirestore(user.uid, []);
+                    } catch (error) {
+                        console.warn("Could not clear cart:", error);
+                    }
+                }
+                
+                // Show success message
+                successMessage.textContent = "Payment successful! Your order has been placed. Order ID: " + docRef.id;
+                successMessage.style.display = 'block';
+                
+                // Redirect to home after 3 seconds
+                setTimeout(() => {
+                    window.location.href = "home.html";
+                }, 3000);
+                
+            } catch (error) {
+                console.error("Error processing payment:", error);
+                let errorMsg = "Error processing payment: " + error.message;
+                
+                if (error.code === 'permission-denied' || error.message.includes('permission')) {
+                    errorMsg += "\n\nPlease check Firestore security rules. See FIRESTORE_RULES.md for instructions.";
+                }
+                
+                errorMessage.textContent = errorMsg;
+                errorMessage.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.value = 'Complete Payment';
+            }
+        }
+
+        initPayment();
+    </script>
+</body>
+</html>

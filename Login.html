@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="Css/Login.css">
+</head>
+<body>
+    <section>
+        <div class="color"></div>
+        <div class="color"></div>
+        <div class="color"></div>
+        <div class="container">
+            <div class="form">
+                <h2>Sign in</h2>
+                <div id="error-message" style="color: red; margin-bottom: 10px; display: none;"></div>
+                <div id="success-message" style="color: green; margin-bottom: 10px; display: none;"></div>
+                <div class="inputBox">
+                    <input type="email" id="email" name="email" placeholder="Email" required>
+                </div>
+                <div class="inputBox">
+                    <input type="password" id="password" name="password" placeholder="Password" required>
+                </div>
+                <div class="inputBox">
+                    <input type="submit" value="Submit" id="login-btn">
+                    <br>
+                    <p>Forget a Password <a href="pass.html">click here</a></p>
+                    <p>You don't have an account <a href="Signup.html">Signup</a></p>
+                    <p style="margin-top: 15px;"><a href="home.html" style="color: #4946fd;">← Back to Home</a></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Firebase SDK -->
+    <script type="module" src="js/firebase.js"></script>
+    <script type="module" src="js/sessionService.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    
+    <script type="module">
+        // Wait for auth service to be available
+        function waitForAuthService() {
+            return new Promise((resolve) => {
+                const checkAuth = setInterval(() => {
+                    if (window.authService) {
+                        clearInterval(checkAuth);
+                        resolve();
+                    }
+                }, 100);
+            });
+        }
+
+        async function initLogin() {
+            await waitForAuthService();
+            
+            const loginBtn = document.getElementById("login-btn");
+            const emailInput = document.getElementById("email");
+            const passwordInput = document.getElementById("password");
+            const errorMessage = document.getElementById("error-message");
+            const successMessage = document.getElementById("success-message");
+
+            loginBtn.addEventListener("click", async (e) => {
+                e.preventDefault();
+                
+                const email = emailInput.value.trim();
+                const password = passwordInput.value;
+
+                // Clear previous messages
+                errorMessage.style.display = "none";
+                successMessage.style.display = "none";
+
+                if (!email || !password) {
+                    errorMessage.textContent = "Please enter both email and password.";
+                    errorMessage.style.display = "block";
+                    return;
+                }
+
+                // Disable button during login
+                loginBtn.disabled = true;
+                loginBtn.value = "Signing in...";
+
+                const result = await window.authService.signIn(email, password);
+
+                if (result.success) {
+                    successMessage.textContent = "Login successful! Redirecting...";
+                    successMessage.style.display = "block";
+                    // Redirect to home page
+                    setTimeout(() => {
+                        window.location.href = "home.html";
+                    }, 1000);
+                } else {
+                    errorMessage.textContent = result.error;
+                    errorMessage.style.display = "block";
+                    loginBtn.disabled = false;
+                    loginBtn.value = "Submit";
+                }
+            });
+
+            // Allow Enter key to submit
+            passwordInput.addEventListener("keypress", (e) => {
+                if (e.key === "Enter") {
+                    loginBtn.click();
+                }
+            });
+        }
+
+        initLogin();
+    </script>
+</body>
+</html>
