@@ -152,9 +152,17 @@
         function waitForServices() {
             return new Promise((resolve) => {
                 const checkServices = setInterval(() => {
-                    if (window.firebaseDb && window.authService && window.cartService) {
+                    // Check if basic services are loaded
+                    const basicServicesLoaded = window.firebaseDb && window.authService && window.cartService && window.sessionService;
+
+                    if (basicServicesLoaded) {
                         clearInterval(checkServices);
-                        resolve();
+                        console.log("All services loaded: firebaseDb, authService, cartService, sessionService");
+
+                        // Give session service a moment to initialize
+                        setTimeout(() => {
+                            resolve();
+                        }, 200);
                     }
                 }, 100);
             });
@@ -162,27 +170,78 @@
 
         async function initPayment() {
             await waitForServices();
-            
-            // Check if user is logged in (check session first)
+
+            console.log("Payment page - Starting auth check...");
+
+            // Check if user is logged in with multiple fallback methods
             let user = null;
+
+            // Method 1: Try session service first (most reliable)
             if (window.sessionService) {
+                console.log("Checking session service...");
                 const sessionValidation = window.sessionService.validateCurrentSession();
+                console.log("Session validation:", sessionValidation);
+
                 if (sessionValidation.valid) {
-                    user = window.authService.getCurrentUser();
-                    if (!user) {
-                        // Get from session
-                        const sessionUser = window.sessionService.getSessionUser();
-                        if (sessionUser) {
-                            user = { uid: sessionUser.uid, email: sessionUser.email, displayName: sessionUser.displayName };
-                        }
+                    // Session is valid, try to get user data
+                    const sessionUser = window.sessionService.getSessionUser();
+                    if (sessionUser) {
+                        user = {
+                            uid: sessionUser.uid,
+                            email: sessionUser.email,
+                            displayName: sessionUser.displayName
+                        };
+                        console.log("User from session:", user);
                     }
                 }
-            } else {
-                user = window.authService.getCurrentUser();
             }
-            
+
+            // Method 2: If no user from session, try Firebase auth (wait for it to be ready)
+            if (!user && window.authService) {
+                console.log("No user from session, checking Firebase auth...");
+
+                // Wait a bit for Firebase auth to initialize if needed
+                let attempts = 0;
+                while (!user && attempts < 10) { // Try for up to 1 second
+                    user = window.authService.getCurrentUser();
+                    if (!user) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        attempts++;
+                    }
+                }
+                console.log("Firebase user after waiting:", user);
+            }
+
+            // Method 3: Last resort - check if there's a session user directly
+            if (!user && window.sessionService) {
+                console.log("Final attempt - checking session user directly...");
+                const sessionUser = window.sessionService.getSessionUser();
+                if (sessionUser) {
+                    user = {
+                        uid: sessionUser.uid,
+                        email: sessionUser.email,
+                        displayName: sessionUser.displayName
+                    };
+                    console.log("User from direct session check:", user);
+                }
+            }
+
+            console.log("Final user object:", user);
+
             if (!user) {
-                alert("Please login to complete payment.");
+                // Debug info for troubleshooting
+                console.error("=== AUTH DEBUG ===");
+                console.log("Session service available:", !!window.sessionService);
+                console.log("Auth service available:", !!window.authService);
+                console.log("Session storage keys:", Object.keys(sessionStorage));
+                console.log("Local storage keys:", Object.keys(localStorage));
+
+                // Check if session data exists at all
+                const hasSessionData = sessionStorage.getItem('leo_store_session_token') ||
+                                     localStorage.getItem('leo_store_session_token');
+                console.log("Any session data exists:", !!hasSessionData);
+
+                alert("Authentication failed. Please login again. Check browser console for details.");
                 window.location.href = "Login.html";
                 return;
             }
@@ -254,8 +313,9 @@
         function displayOrderSummary(orderData) {
             const itemsHtml = orderData.items.map(item => {
                 const quantity = item.quantity || 1;
+                const size = item.size ? ` (Size: ${item.size})` : '';
                 const itemTotal = parseFloat(item.price.replace("$", "").replace(",", "")) * quantity;
-                return `<li>${item.title} - ${item.price} x ${quantity} = $${itemTotal.toFixed(2)}</li>`;
+                return `<li>${item.title}${size} - ${item.price} x ${quantity} = $${itemTotal.toFixed(2)}</li>`;
             }).join('');
             document.getElementById('order-items').innerHTML = `<ul>${itemsHtml}</ul>`;
             document.getElementById('order-total').textContent = '$' + orderData.total;
@@ -274,11 +334,15 @@
             const submitBtn = document.getElementById('submit-btn');
             const errorMessage = document.getElementById('error-message');
             const successMessage = document.getElementById('success-message');
-            
+
+            console.log("=== PAYMENT PROCESSING DEBUG ===");
+            console.log("User object:", user);
+            console.log("Order data:", orderData);
+
             // Clear messages
             errorMessage.style.display = 'none';
             successMessage.style.display = 'none';
-            
+
             // Get form values
             const name = document.getElementById('name').value.trim();
             const email = document.getElementById('email').value.trim();
@@ -286,26 +350,58 @@
             const cardNumber = document.getElementById('card_number').value.trim();
             const expiry = document.getElementById('expiry').value.trim();
             const cvv = document.getElementById('cvv').value.trim();
-            
+
+            console.log("Form values collected:", { name, email, address, cardNumber: cardNumber.substring(0, 4) + "****", expiry, cvv: "***" });
+
             // Validation
             if (!name || !email || !address || !cardNumber || !expiry || !cvv) {
                 errorMessage.textContent = "Please fill in all fields.";
                 errorMessage.style.display = 'block';
                 return;
             }
-            
+
             // Disable button
             submitBtn.disabled = true;
             submitBtn.value = 'Processing...';
-            
+
             try {
                 const db = window.firebaseDb;
+                console.log("Firebase DB available:", !!db);
+
                 const { collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-                
-                // Get user ID from session or Firebase user
-                const userId = user.uid || (window.sessionService ? window.sessionService.getSessionUser()?.uid : null);
+                console.log("Firestore imports successful");
+
+                // Get user ID - prioritize Firebase auth uid for Firestore rules
+                let userId = null;
+
+                // First, try to get from Firebase auth (most reliable for Firestore rules)
+                if (window.authService) {
+                    const firebaseUser = window.authService.getCurrentUser();
+                    if (firebaseUser && firebaseUser.uid) {
+                        userId = firebaseUser.uid;
+                        console.log("Using Firebase auth uid:", userId);
+                    }
+                }
+
+                // Fallback to session user if Firebase auth not available
+                if (!userId && window.sessionService) {
+                    const sessionUser = window.sessionService.getSessionUser();
+                    if (sessionUser && sessionUser.uid) {
+                        userId = sessionUser.uid;
+                        console.log("Using session user uid:", userId);
+                    }
+                }
+
+                // Final fallback to the user object passed to this function
+                if (!userId && user.uid) {
+                    userId = user.uid;
+                    console.log("Using passed user uid:", userId);
+                }
+
+                console.log("Final userId for order:", userId);
+
                 if (!userId) {
-                    throw new Error("User ID not found. Please login again.");
+                    throw new Error("User ID not found. Please login again and ensure you're authenticated.");
                 }
                 
                 // Prepare complete order with payment details
@@ -314,7 +410,7 @@
                     items: orderData.items,
                     total: orderData.total,
                     status: "completed",
-                    
+
                     // Payment details
                     payment: {
                         method: "card",
@@ -323,21 +419,25 @@
                         expiry: expiry,
                         // Note: CVV should NEVER be stored - we don't store it for security
                     },
-                    
+
                     // Shipping details
                     shipping: {
                         name: name,
                         email: email,
                         address: address
                     },
-                    
+
                     // Timestamps
                     createdAt: serverTimestamp(),
                     paidAt: serverTimestamp()
                 };
-                
+
+                console.log("Complete order object:", completeOrder);
+                console.log("Attempting to save to Firestore collection: orders");
+
                 // Save complete order to Firestore
                 const docRef = await addDoc(collection(db, "orders"), completeOrder);
+                console.log("Order saved successfully, document ID:", docRef.id);
                 
                 // Clear cart from localStorage
                 localStorage.removeItem('pendingOrder');
@@ -365,13 +465,35 @@
                 }, 3000);
                 
             } catch (error) {
-                console.error("Error processing payment:", error);
-                let errorMsg = "Error processing payment: " + error.message;
-                
+                console.error("=== PAYMENT ERROR DETAILS ===");
+                console.error("Error object:", error);
+                console.error("Error code:", error.code);
+                console.error("Error message:", error.message);
+                console.error("Error stack:", error.stack);
+
+                let errorMsg = "Error processing payment: ";
+
                 if (error.code === 'permission-denied' || error.message.includes('permission')) {
-                    errorMsg += "\n\nPlease check Firestore security rules. See FIRESTORE_RULES.md for instructions.";
+                    errorMsg += "Permission denied. This usually means:\n";
+                    errorMsg += "1. You're not logged in\n";
+                    errorMsg += "2. Firestore security rules are not configured correctly\n";
+                    errorMsg += "3. The user ID in the order doesn't match your authenticated user\n\n";
+                    errorMsg += "Please check Firestore security rules in FIRESTORE_RULES.md and ensure you're logged in.";
+                } else if (error.code === 'unauthenticated') {
+                    errorMsg += "You are not authenticated. Please login again.";
+                } else if (error.code === 'unavailable') {
+                    errorMsg += "Firestore is temporarily unavailable. Please try again.";
+                } else if (error.code === 'resource-exhausted') {
+                    errorMsg += "Too many requests. Please wait and try again.";
+                } else if (error.message) {
+                    errorMsg += error.message;
+                } else {
+                    errorMsg += "Unknown error occurred.";
                 }
-                
+
+                // Add debug info for developer
+                errorMsg += "\n\nDEBUG: Check browser console for detailed error information.";
+
                 errorMessage.textContent = errorMsg;
                 errorMessage.style.display = 'block';
                 submitBtn.disabled = false;

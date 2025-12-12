@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Leo Store</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .debug-section h3 { margin-top: 0; color: #333; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Leo Store - Debug Page</h1>
+
+    <div class="debug-section">
+        <h3>🔍 Session Status</h3>
+        <button onclick="checkSession()">Check Session</button>
+        <button onclick="clearAllStorage()">Clear All Storage</button>
+        <div id="session-status"></div>
+    </div>
+
+    <div class="debug-section">
+        <h3>📦 Cart Data</h3>
+        <button onclick="checkCart()">Check Cart</button>
+        <div id="cart-status"></div>
+    </div>
+
+    <div class="debug-section">
+        <h3>📋 Pending Order</h3>
+        <button onclick="checkPendingOrder()">Check Pending Order</button>
+        <div id="order-status"></div>
+    </div>
+
+    <div class="debug-section">
+        <h3>🔐 Firebase Auth</h3>
+        <button onclick="checkFirebaseAuth()">Check Firebase Auth</button>
+        <div id="auth-status"></div>
+    </div>
+
+    <div class="debug-section">
+        <h3>🧪 Quick Test</h3>
+        <p>Click this button to simulate the login->cart->payment flow:</p>
+        <button onclick="runFlowTest()">Run Flow Test</button>
+        <div id="flow-test"></div>
+    </div>
+
+    <div class="debug-section">
+        <h3>🔥 Firestore Test - FIXES PAYMENT ERRORS</h3>
+        <p class="error" style="background: #ffe6e6; padding: 10px; border-radius: 3px; margin-bottom: 10px;">
+            <strong>⚠️ PAYMENT NOT WORKING?</strong> This test will show you exactly what's wrong and how to fix it!
+        </p>
+        <button onclick="testFirestorePermissions()" style="background: #dc3545; color: white; padding: 12px 20px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer;">
+            🔍 Test Firestore Permissions (Fix Payment Issues)
+        </button>
+        <div id="firestore-test"></div>
+        <p style="margin-top: 15px;">
+            <strong>Quick Fix:</strong> If test fails, go to <a href="firestore-fix.html" target="_blank" style="color: #007bff;"><strong>firestore-fix.html</strong></a> for step-by-step instructions.
+        </p>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module" src="js/firebase.js"></script>
+    <script type="module" src="js/sessionService.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/cartService.js"></script>
+    <script type="module" src="js/authState.js"></script>
+
+    <script type="module">
+        // Wait for services
+        function waitForServices() {
+            return new Promise((resolve) => {
+                const checkServices = setInterval(() => {
+                    if (window.firebaseDb && window.authService && window.cartService && window.sessionService) {
+                        clearInterval(checkServices);
+                        resolve();
+                    }
+                }, 100);
+            });
+        }
+
+        window.checkSession = async function() {
+            await waitForServices();
+            const statusDiv = document.getElementById('session-status');
+
+            try {
+                let html = '<h4>Session Check Results:</h4>';
+
+                // Check session validation
+                if (window.sessionService) {
+                    const validation = window.sessionService.validateCurrentSession();
+                    html += `<p><strong>Session Validation:</strong> <span class="${validation.valid ? 'success' : 'error'}">${validation.valid ? 'VALID' : 'INVALID'}</span></p>`;
+                    if (!validation.valid) {
+                        html += `<p><strong>Error:</strong> ${validation.error}</p>`;
+                    } else {
+                        html += `<p><strong>User ID:</strong> ${validation.userId}</p>`;
+                        html += `<p><strong>Email:</strong> ${validation.email}</p>`;
+                    }
+
+                    // Check session user
+                    const sessionUser = window.sessionService.getSessionUser();
+                    html += `<p><strong>Session User:</strong> ${sessionUser ? 'Found' : 'Not Found'}</p>`;
+                    if (sessionUser) {
+                        html += `<pre>${JSON.stringify(sessionUser, null, 2)}</pre>`;
+                    }
+                }
+
+                // Check storage directly
+                html += '<h4>Storage Contents:</h4>';
+                html += '<h5>sessionStorage:</h5>';
+                const sessionKeys = Object.keys(sessionStorage).filter(k => k.includes('leo_store'));
+                if (sessionKeys.length > 0) {
+                    sessionKeys.forEach(key => {
+                        html += `<p><strong>${key}:</strong> ${sessionStorage.getItem(key).substring(0, 50)}...</p>`;
+                    });
+                } else {
+                    html += '<p>No leo_store keys in sessionStorage</p>';
+                }
+
+                html += '<h5>localStorage:</h5>';
+                const localKeys = Object.keys(localStorage).filter(k => k.includes('leo_store'));
+                if (localKeys.length > 0) {
+                    localKeys.forEach(key => {
+                        html += `<p><strong>${key}:</strong> ${localStorage.getItem(key).substring(0, 50)}...</p>`;
+                    });
+                } else {
+                    html += '<p>No leo_store keys in localStorage</p>';
+                }
+
+                statusDiv.innerHTML = html;
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">Error checking session: ${error.message}</p>`;
+            }
+        };
+
+        window.checkCart = async function() {
+            await waitForServices();
+            const statusDiv = document.getElementById('cart-status');
+
+            try {
+                let html = '<h4>Cart Check Results:</h4>';
+
+                // Check local cart (from Leo.js)
+                const localCart = window.itemsAdded || [];
+                html += `<p><strong>Local Cart Items:</strong> ${localCart.length}</p>`;
+                if (localCart.length > 0) {
+                    html += `<pre>${JSON.stringify(localCart, null, 2)}</pre>`;
+                }
+
+                // Check Firestore cart
+                const user = window.authService ? window.authService.getCurrentUser() : null;
+                if (user && window.cartService) {
+                    const cartResult = await window.cartService.loadCartFromFirestore(user.uid);
+                    html += `<p><strong>Firestore Cart:</strong> ${cartResult.success ? 'Loaded' : 'Failed'}</p>`;
+                    if (cartResult.success) {
+                        html += `<p><strong>Items:</strong> ${cartResult.cart.length}</p>`;
+                        if (cartResult.cart.length > 0) {
+                            html += `<pre>${JSON.stringify(cartResult.cart, null, 2)}</pre>`;
+                        }
+                    }
+                } else {
+                    html += '<p>No user or cart service available</p>';
+                }
+
+                statusDiv.innerHTML = html;
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">Error checking cart: ${error.message}</p>`;
+            }
+        };
+
+        window.checkPendingOrder = function() {
+            const statusDiv = document.getElementById('order-status');
+
+            try {
+                const pendingOrder = localStorage.getItem('pendingOrder');
+                let html = '<h4>Pending Order Check:</h4>';
+
+                if (pendingOrder) {
+                    const orderData = JSON.parse(pendingOrder);
+                    html += '<p class="success">Pending order found!</p>';
+                    html += `<pre>${JSON.stringify(orderData, null, 2)}</pre>`;
+                } else {
+                    html += '<p class="error">No pending order found</p>';
+                }
+
+                statusDiv.innerHTML = html;
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">Error checking pending order: ${error.message}</p>`;
+            }
+        };
+
+        window.checkFirebaseAuth = async function() {
+            await waitForServices();
+            const statusDiv = document.getElementById('auth-status');
+
+            try {
+                let html = '<h4>Firebase Auth Check:</h4>';
+
+                const firebaseUser = window.authService ? window.authService.getCurrentUser() : null;
+                html += `<p><strong>Firebase User:</strong> ${firebaseUser ? 'Logged In' : 'Not Logged In'}</p>`;
+
+                if (firebaseUser) {
+                    html += `<p><strong>UID:</strong> ${firebaseUser.uid}</p>`;
+                    html += `<p><strong>Email:</strong> ${firebaseUser.email}</p>`;
+                    html += `<p><strong>Display Name:</strong> ${firebaseUser.displayName || 'None'}</p>`;
+                }
+
+                statusDiv.innerHTML = html;
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">Error checking Firebase auth: ${error.message}</p>`;
+            }
+        };
+
+        window.clearAllStorage = function() {
+            // Clear session storage
+            Object.keys(sessionStorage).forEach(key => {
+                if (key.includes('leo_store')) {
+                    sessionStorage.removeItem(key);
+                }
+            });
+
+            // Clear local storage
+            Object.keys(localStorage).forEach(key => {
+                if (key.includes('leo_store') || key === 'pendingOrder') {
+                    localStorage.removeItem(key);
+                }
+            });
+
+            alert('Storage cleared! Please refresh the page.');
+            location.reload();
+        };
+
+        window.runFlowTest = async function() {
+            await waitForServices();
+            const statusDiv = document.getElementById('flow-test');
+
+            let html = '<h4>Flow Test Results:</h4>';
+
+            try {
+                // Step 1: Check session
+                const sessionValid = window.sessionService ? window.sessionService.validateCurrentSession().valid : false;
+                html += `<p><strong>Session Valid:</strong> <span class="${sessionValid ? 'success' : 'error'}">${sessionValid ? 'YES' : 'NO'}</span></p>`;
+
+                // Step 2: Check user
+                const firebaseUser = window.authService ? window.authService.getCurrentUser() : null;
+                const sessionUser = window.sessionService ? window.sessionService.getSessionUser() : null;
+                const hasUser = firebaseUser || sessionUser;
+
+                html += `<p><strong>Has User:</strong> <span class="${hasUser ? 'success' : 'error'}">${hasUser ? 'YES' : 'NO'}</span></p>`;
+
+                // Step 3: Check cart
+                const cartItems = window.itemsAdded || [];
+                html += `<p><strong>Cart Items:</strong> <span class="${cartItems.length > 0 ? 'success' : 'info'}">${cartItems.length}</span></p>`;
+
+                // Step 4: Simulate buy order logic
+                let canProceed = false;
+                if (hasUser && cartItems.length > 0) {
+                    canProceed = true;
+                }
+
+                html += `<p><strong>Can Proceed to Payment:</strong> <span class="${canProceed ? 'success' : 'error'}">${canProceed ? 'YES' : 'NO'}</span></p>`;
+
+                if (!canProceed) {
+                    html += '<p class="error"><strong>Issues found:</strong></p><ul>';
+                    if (!hasUser) html += '<li>User not authenticated</li>';
+                    if (cartItems.length === 0) html += '<li>No items in cart</li>';
+                    html += '</ul>';
+                }
+
+                statusDiv.innerHTML = html;
+
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">Flow test failed: ${error.message}</p>`;
+            }
+        };
+
+        window.testFirestorePermissions = async function() {
+            await waitForServices();
+            let statusDiv = document.getElementById('firestore-test');
+
+            if (!statusDiv) {
+                // Create the div if it doesn't exist
+                const newDiv = document.createElement('div');
+                newDiv.id = 'firestore-test';
+                newDiv.className = 'debug-section';
+                document.body.appendChild(newDiv);
+                statusDiv = newDiv;
+            }
+
+            statusDiv.innerHTML = '<h4>🔍 Testing Firestore Permissions...</h4><p>Running comprehensive tests...</p>';
+
+            try {
+                let html = '<h4>Firestore Permissions Test Results:</h4>';
+
+                // Check if user is authenticated
+                const firebaseUser = window.authService ? window.authService.getCurrentUser() : null;
+                const sessionUser = window.sessionService ? window.sessionService.getSessionUser() : null;
+
+                html += `<p><strong>Firebase Auth User:</strong> ${firebaseUser ? '✅ YES (' + firebaseUser.uid.substring(0, 8) + '...)' : '❌ NO'}</p>`;
+                html += `<p><strong>Session User:</strong> ${sessionUser ? '✅ YES (' + sessionUser.uid.substring(0, 8) + '...)' : '❌ NO'}</p>`;
+
+                if (!firebaseUser && !sessionUser) {
+                    html += '<p class="error">❌ <strong>No authenticated user found.</strong> Please login first.</p>';
+                    html += '<p><a href="Login.html">Go to Login Page</a></p>';
+                    statusDiv.innerHTML = html;
+                    return;
+                }
+
+                const userId = firebaseUser ? firebaseUser.uid : sessionUser.uid;
+                html += `<p><strong>User ID to test:</strong> ${userId.substring(0, 12)}...</p>`;
+
+                // Test 1: Writing to orders collection
+                html += '<h5>🧪 Test 1: Creating Order Document</h5>';
+                const { collection, addDoc, serverTimestamp, doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                const db = window.firebaseDb;
+
+                const testOrder = {
+                    userId: userId,
+                    items: [{ title: "Test Item", price: "$10.00", imgSrc: "test.jpg", quantity: 1 }],
+                    total: "10.00",
+                    status: "test",
+                    createdAt: serverTimestamp()
+                };
+
+                html += '<p>📤 Attempting to create test order...</p>';
+
+                let docId = null;
+                try {
+                    const docRef = await addDoc(collection(db, "orders"), testOrder);
+                    docId = docRef.id;
+                    html += `<p class="success">✅ <strong>Order creation successful!</strong> Document ID: ${docId}</p>`;
+
+                    // Test 2: Reading the order back
+                    html += '<h5>🧪 Test 2: Reading Order Document</h5>';
+                    const { getDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+
+                    try {
+                        const docSnap = await getDoc(doc(db, "orders", docId));
+                        if (docSnap.exists()) {
+                            html += '<p class="success">✅ <strong>Order read successful!</strong> Can access own orders.</p>';
+                        } else {
+                            html += '<p class="error">❌ <strong>Order read failed!</strong> Document not found.</p>';
+                        }
+                    } catch (readError) {
+                        html += `<p class="error">❌ <strong>Order read failed:</strong> ${readError.message}</p>`;
+                    }
+
+                    // Clean up test document
+                    await deleteDoc(doc(db, "orders", docId));
+                    html += '<p class="info">🧹 Test document cleaned up.</p>';
+
+                    // Overall success
+                    html += '<hr>';
+                    html += '<p class="success">🎉 <strong>ALL TESTS PASSED!</strong> Your Firestore rules are correctly configured.</p>';
+                    html += '<p>You should be able to process payments now. Try placing an order!</p>';
+
+                } catch (firestoreError) {
+                    console.error("Firestore test error:", firestoreError);
+                    html += `<p class="error">❌ <strong>Order creation failed:</strong> ${firestoreError.message}</p>`;
+                    html += `<p><strong>Error Code:</strong> ${firestoreError.code}</p>`;
+
+                    if (firestoreError.code === 'permission-denied') {
+                        html += '<div style="background: #ffe6e6; padding: 15px; border-radius: 5px; margin: 10px 0;">';
+                        html += '<h4 style="color: #d63031; margin-top: 0;">🔒 PERMISSION DENIED - Rules Need Fixing</h4>';
+                        html += '<p><strong>What this means:</strong> Your Firestore security rules don\'t allow authenticated users to create orders.</p>';
+                        html += '<p><strong>How to fix:</strong></p>';
+                        html += '<ol>';
+                        html += '<li>Go to <a href="firestore-fix.html" target="_blank"><strong>firestore-fix.html</strong></a></li>';
+                        html += '<li>Follow the step-by-step instructions</li>';
+                        html += '<li>Copy the rules and paste into Firebase Console</li>';
+                        html += '<li>Click Publish</li>';
+                        html += '<li>Come back here and test again</li>';
+                        html += '</ol>';
+                        html += '<p><strong>Quick Fix:</strong> Copy these rules to Firebase Console > Firestore > Rules:</p>';
+                        html += '<pre style="background: #f8f9fa; padding: 10px; border-radius: 3px; font-size: 12px;">rules_version = \'2\';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /orders/{orderId} {\n      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;\n      allow read, update: if request.auth != null && resource.data.userId == request.auth.uid;\n    }\n  }\n}</pre>';
+                        html += '</div>';
+                    } else if (firestoreError.code === 'unavailable') {
+                        html += '<p class="error">Firestore is temporarily unavailable. Try again in a moment.</p>';
+                    } else {
+                        html += '<p class="error">Unknown error. Check browser console for details.</p>';
+                    }
+                }
+
+                statusDiv.innerHTML = html;
+
+            } catch (error) {
+                console.error("Test setup error:", error);
+                statusDiv.innerHTML = `<p class="error">❌ Test setup failed: ${error.message}</p><p>Check browser console for details.</p>`;
+            }
+        };
+
+        // Auto-run checks when page loads
+        waitForServices().then(() => {
+            console.log('Debug page ready');
+        });
+    </script>
+</body>
+</html>

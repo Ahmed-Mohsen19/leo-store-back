@@ -270,7 +270,7 @@ function renderCartFromItems() {
   cartContent.innerHTML = "";
   itemsAdded.forEach(item => {
     if (item.title && item.price && item.imgSrc) {
-      let cartBoxElement = CartBoxComponent(item.title, item.price, item.imgSrc);
+      let cartBoxElement = CartBoxComponent(item.title, item.price, item.imgSrc, item.size);
       let newNode = document.createElement("div");
       newNode.innerHTML = cartBoxElement;
       cartContent.appendChild(newNode);
@@ -287,32 +287,41 @@ function handle_addCartItem() {
   let titleElement = product.querySelector(".product-title");
   let priceElement = product.querySelector(".product-price");
   let imgElement = product.querySelector(".product-img");
-  
+  let sizeElement = product.querySelector(".product-size");
+
   if (!titleElement || !priceElement || !imgElement) {
     console.error("Product elements not found");
     return;
   }
-  
+
   let title = titleElement.innerHTML.trim();
   let price = priceElement.innerHTML.trim();
   let imgSrc = imgElement.src;
+  let size = sizeElement ? sizeElement.value : "N/A";
+
+  // Check if size is disabled/unavailable
+  if (sizeElement && sizeElement.options[sizeElement.selectedIndex].disabled) {
+    alert("This size is currently out of stock!");
+    return;
+  }
 
   let newToAdd = {
     title,
     price,
     imgSrc,
+    size,
   };
 
-  // handle item is already exist
-  if (itemsAdded.find((el) => el.title === newToAdd.title)) {
-    alert("This Item Is Already In Your Cart!");
+  // handle item is already exist (same title AND same size)
+  if (itemsAdded.find((el) => el.title === newToAdd.title && el.size === newToAdd.size)) {
+    alert("This Item (same size) Is Already In Your Cart!");
     return;
   } else {
     itemsAdded.push(newToAdd);
   }
 
   // Add product to cart
-  let cartBoxElement = CartBoxComponent(title, price, imgSrc);
+  let cartBoxElement = CartBoxComponent(title, price, imgSrc, size);
   let newNode = document.createElement("div");
   newNode.innerHTML = cartBoxElement;
   const cartContent = cart?.querySelector(".cart-content");
@@ -327,8 +336,19 @@ function handle_addCartItem() {
 function handle_removeCartItem() {
   const cartBox = this.parentElement;
   const titleElement = cartBox.querySelector(".cart-product-title");
-  
-  if (titleElement) {
+  const sizeElement = cartBox.querySelector(".cart-size");
+
+  if (titleElement && sizeElement) {
+    const title = titleElement.innerHTML.trim();
+    const sizeText = sizeElement.innerHTML.trim();
+    const size = sizeText.replace("Size: ", ""); // Extract size from "Size: L"
+
+    // Remove item that matches both title and size
+    itemsAdded = itemsAdded.filter((el) => !(el.title === title && el.size === size));
+    cartBox.remove();
+    update();
+  } else if (titleElement) {
+    // Fallback: if no size element, remove by title only (for backward compatibility)
     const title = titleElement.innerHTML.trim();
     itemsAdded = itemsAdded.filter((el) => el.title !== title);
     cartBox.remove();
@@ -355,31 +375,52 @@ function handle_changeItemQuantity() {
 }
 
 async function handle_buyOrder() {
+  console.log("handle_buyOrder called");
+  console.log("Items in cart:", itemsAdded.length);
+
   if (itemsAdded.length <= 0) {
     alert("There is No Order to Place Yet! \nPlease Make an Order first.");
     return;
   }
-  
+
   // Check session first, then Firebase auth
   let user = null;
+  console.log("Checking session service:", !!window.sessionService);
+  console.log("Checking auth service:", !!window.authService);
+
   if (window.sessionService) {
     const sessionValidation = window.sessionService.validateCurrentSession();
+    console.log("Buy order - Session validation:", sessionValidation);
+
     if (sessionValidation.valid) {
       // Session valid, get user from session or Firebase
+      console.log("Session valid, checking Firebase user...");
       user = window.authService ? window.authService.getCurrentUser() : null;
+      console.log("Firebase user in buy order:", user);
+
       if (!user) {
         // Try to get from session
+        console.log("No Firebase user, trying session user...");
         const sessionUser = window.sessionService.getSessionUser();
+        console.log("Session user in buy order:", sessionUser);
+
         if (sessionUser) {
           // Create a user-like object from session
           user = { uid: sessionUser.uid, email: sessionUser.email, displayName: sessionUser.displayName };
+          console.log("Created user from session in buy order:", user);
         }
       }
+    } else {
+      console.log("Session validation failed in buy order:", sessionValidation.error);
     }
   } else {
+    console.log("Session service not available, checking Firebase auth...");
     user = window.authService ? window.authService.getCurrentUser() : null;
+    console.log("Firebase user in buy order:", user);
   }
-  
+
+  console.log("Final user in buy order:", user);
+
   if (!user) {
     alert("Please login to place an order.");
     window.location.href = "Login.html";
@@ -477,12 +518,13 @@ function updateTotal() {
 }
 
 // ============= HTML COMPONENTS =============
-function CartBoxComponent(title, price, imgSrc) {
+function CartBoxComponent(title, price, imgSrc, size = "N/A") {
   return `
     <div class="cart-box">
         <img src=${imgSrc} alt="" class="cart-img">
         <div class="detail-box">
             <div class="cart-product-title">${title}</div>
+            <div class="cart-size">Size: ${size}</div>
             <div class="cart-price">${price}</div>
             <input type="number" value="1" class="cart-quantity">
         </div>

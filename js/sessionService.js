@@ -32,39 +32,61 @@ function generateSessionToken(userId, email) {
 // Validate session token
 function validateSessionToken(token) {
   try {
+    console.log("validateSessionToken called with token:", token ? token.substring(0, 50) + "..." : "null");
+
     if (!token || typeof token !== 'string') {
+      console.log("Invalid token format");
       return { valid: false, error: 'Invalid token format' };
     }
-    
+
     const parts = token.split('.');
     if (parts.length !== 2) {
+      console.log("Invalid token structure, parts:", parts.length);
       return { valid: false, error: 'Invalid token structure' };
     }
-    
+
     const [tokenData, hash] = parts;
-    const decoded = JSON.parse(atob(tokenData));
-    
+    console.log("Token data length:", tokenData.length);
+    console.log("Hash:", hash);
+
+    let decoded;
+    try {
+      decoded = JSON.parse(atob(tokenData));
+      console.log("Decoded token data:", decoded);
+    } catch (decodeError) {
+      console.log("Failed to decode token data:", decodeError);
+      return { valid: false, error: 'Token decode failed: ' + decodeError.message };
+    }
+
     // Check if token is expired
     const now = Date.now();
     const tokenAge = now - decoded.timestamp;
-    
+    console.log("Token age:", tokenAge, "max allowed:", SESSION_DURATION);
+
     if (tokenAge > SESSION_DURATION) {
+      console.log("Token expired");
       return { valid: false, error: 'Token expired', expired: true };
     }
-    
+
     // Verify hash
     const expectedHash = btoa(decoded.userId + decoded.timestamp + decoded.random).substring(0, 16);
+    console.log("Expected hash:", expectedHash);
+    console.log("Actual hash:", hash);
+
     if (hash !== expectedHash) {
+      console.log("Token hash mismatch");
       return { valid: false, error: 'Token tampered' };
     }
-    
-    return { 
-      valid: true, 
-      userId: decoded.userId, 
+
+    console.log("Token validation successful");
+    return {
+      valid: true,
+      userId: decoded.userId,
       email: decoded.email,
       timestamp: decoded.timestamp
     };
   } catch (error) {
+    console.error("Token validation error:", error);
     return { valid: false, error: 'Token validation failed: ' + error.message };
   }
 }
@@ -153,27 +175,36 @@ function getSessionUser() {
 
 // Validate current session
 function validateCurrentSession() {
+  console.log("validateCurrentSession called");
+
   const token = getSessionToken();
-  
+  console.log("Session token found:", !!token);
+
   if (!token) {
+    console.log("No session token found");
     return { valid: false, error: 'No session token found' };
   }
-  
+
   const validation = validateSessionToken(token);
-  
+  console.log("Token validation result:", validation);
+
   if (!validation.valid) {
     // Clear invalid session
     if (validation.expired) {
+      console.log("Session expired, clearing...");
       clearSession();
     }
     return validation;
   }
-  
-  return { 
-    valid: true, 
-    userId: validation.userId, 
+
+  const sessionUser = getSessionUser();
+  console.log("Session user from storage:", sessionUser);
+
+  return {
+    valid: true,
+    userId: validation.userId,
     email: validation.email,
-    user: getSessionUser()
+    user: sessionUser
   };
 }
 

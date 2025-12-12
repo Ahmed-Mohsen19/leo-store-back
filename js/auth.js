@@ -81,26 +81,36 @@ async function signUp(email, password, firstName, lastName) {
 
 // Sign in existing user
 async function signIn(email, password) {
+  console.log("signIn called with email:", email);
   try {
     await waitForFirebase();
-    
+    console.log("Firebase ready for sign in");
+
     const { signInWithEmailAndPassword } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
     const auth = window.firebaseAuth;
-    
+
     if (!auth) {
+      console.log("Firebase Auth not initialized");
       return { success: false, error: "Firebase Auth not initialized" };
     }
 
+    console.log("Attempting sign in...");
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
-    
+    console.log("Sign in successful, user:", user);
+
     // Create session token
     if (window.sessionService) {
-      window.sessionService.createSession(user);
+      console.log("Creating session token...");
+      const sessionResult = window.sessionService.createSession(user);
+      console.log("Session creation result:", sessionResult);
+    } else {
+      console.log("Session service not available");
     }
-    
+
     return { success: true, user: user };
   } catch (error) {
+    console.error("Sign in error:", error);
     let errorMessage = "An error occurred during sign in.";
     if (error.code === "auth/user-not-found") {
       errorMessage = "No account found with this email.";
