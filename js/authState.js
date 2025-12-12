@@ -132,7 +132,7 @@ function createLogoutButton() {
         e.preventDefault();
         const result = await window.authService.logOut();
         if (result.success) {
-          window.location.href = 'home.html';
+          window.location.href = 'index.html';
         } else {
           alert('Error logging out: ' + result.error);
         }

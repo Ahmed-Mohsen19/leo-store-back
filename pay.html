@@ -99,7 +99,7 @@
 </head>
 <body>
     <div class="nav">
-        <a href="home.html" class="logo"><span>Leo</span>Store</a>
+        <a href="index.html" class="logo"><span>Leo</span>Store</a>
         <a href="./Leo.html">Shirts</a>
         <a href="./shoes.html">Shoes</a>
         <a href="./accessories.html">Accessories</a>
@@ -263,10 +263,10 @@
                 if (sessionStorage.getItem('clearCart') === 'true') {
                     alert("Your order has already been processed. Thank you!");
                     sessionStorage.removeItem('clearCart');
-                    window.location.href = "home.html";
+                    window.location.href = "index.html";
                 } else {
                     alert("No order found. Please add items to cart first.");
-                    window.location.href = "home.html";
+                    window.location.href = "index.html";
                 }
                 return;
             }
@@ -276,7 +276,7 @@
                 alert("This order does not belong to you. Please create a new order.");
                 localStorage.removeItem('pendingOrder');
                 sessionStorage.removeItem('orderInProgress');
-                window.location.href = "home.html";
+                window.location.href = "index.html";
                 return;
             }
             
@@ -461,7 +461,7 @@
                 
                 // Redirect to home after 3 seconds
                 setTimeout(() => {
-                    window.location.href = "home.html";
+                    window.location.href = "index.html";
                 }, 3000);
                 
             } catch (error) {
